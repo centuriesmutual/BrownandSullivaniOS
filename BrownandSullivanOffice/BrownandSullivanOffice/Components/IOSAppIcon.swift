@@ -12,13 +12,12 @@ struct IOSAppIcon: View {
         Button(action: action) {
             VStack(spacing: 8) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
                         .fill(LinearGradient(colors: gradient,
                                              startPoint: .topLeading,
                                              endPoint: .bottomTrailing))
                         .frame(width: 64, height: 64)
-                        .shadow(color: gradient.last?.opacity(0.35) ?? .clear,
-                                radius: 8, y: 4)
+                        .shadow(color: (gradient.last ?? .clear).opacity(0.28), radius: 6, y: 3)
                     Image(systemName: icon)
                         .font(.system(size: 28, weight: .semibold))
                         .foregroundStyle(.white)

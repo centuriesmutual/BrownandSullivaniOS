@@ -3,10 +3,13 @@ import SwiftUI
 struct HomeView: View {
     @EnvironmentObject private var app: AppState
     @State private var aiInput: String = ""
+    @State private var workspaceSearch: String = ""
 
     var body: some View {
         ScrollView {
             VStack(spacing: Theme.spacing.l) {
+                SuiteSearchBar(text: $workspaceSearch,
+                              prompt: "Search mail, Drive, chat, calendar…")
                 welcomeHeader
                 appsGrid
                 meetingsCard
@@ -23,11 +26,11 @@ struct HomeView: View {
     // MARK: - Sections
 
     private var welcomeHeader: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("Welcome back, \(firstName)")
-                .font(.system(size: 28, weight: .bold))
-                .foregroundStyle(Theme.gradient.primary)
-            Text("Here's what's happening in your office today")
+                .font(.largeTitle.weight(.bold))
+                .foregroundStyle(Theme.color.textPrimary)
+            Text("Your workspace · tap an app below or search above")
                 .font(.subheadline)
                 .foregroundStyle(Theme.color.textSecondary)
         }

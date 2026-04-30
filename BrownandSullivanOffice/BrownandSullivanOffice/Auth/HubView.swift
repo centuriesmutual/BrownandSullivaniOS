@@ -7,24 +7,32 @@ struct HubView: View {
 
     var body: some View {
         ZStack {
-            PressBoxTheme.heroGradient.ignoresSafeArea()
+            Theme.Suite.chromeBackground.ignoresSafeArea()
 
             ScrollView {
-                VStack(spacing: 28) {
+                VStack(spacing: 24) {
                     VStack(spacing: 8) {
-                        Text("Workspaces")
+                        Image(systemName: "square.stack.3d.up.fill")
+                            .font(.system(size: 44))
+                            .foregroundStyle(Theme.gradient.primary)
+                            .padding(.top, 36)
+                        Text("Google / Apple–style workspace")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(Theme.color.textSecondary)
+                        Text("Choose a product")
                             .font(.largeTitle.bold())
-                            .foregroundStyle(PressBoxTheme.textPrimary)
-                        Text("Choose where you want to sign in")
+                            .foregroundStyle(Theme.color.textPrimary)
+                        Text("Same sign-in experience as your productivity suite.")
                             .font(.subheadline)
-                            .foregroundStyle(PressBoxTheme.textSecondary)
+                            .foregroundStyle(Theme.color.textSecondary)
+                            .multilineTextAlignment(.center)
                     }
-                    .padding(.top, 48)
+                    .padding(.horizontal, 24)
 
-                    VStack(spacing: 16) {
+                    VStack(spacing: 14) {
                         workspaceCard(
-                            title: "Office Dashboard",
-                            subtitle: "Dialer, enrollment, drive, chat & analytics",
+                            title: "Office",
+                            subtitle: "Phone · cloud files · mail · calendar · chat",
                             icon: "building.2.fill",
                             gradient: [Theme.color.primary, Color(hex: 0x4285F4)]
                         ) {
@@ -33,7 +41,7 @@ struct HubView: View {
 
                         workspaceCard(
                             title: "PressBox",
-                            subtitle: "Marketing Hub — campaigns, content & intelligence",
+                            subtitle: "Marketing Hub — campaigns & intelligence",
                             icon: "megaphone.fill",
                             gradient: [PressBoxTheme.indigo, PressBoxTheme.indigoDark]
                         ) {
@@ -44,8 +52,8 @@ struct HubView: View {
 
                     Text("Use your organization email on the next screen.")
                         .font(.caption)
-                        .foregroundStyle(PressBoxTheme.textSecondary)
-                        .padding(.top, 8)
+                        .foregroundStyle(Theme.color.textSecondary)
+                        .padding(.top, 4)
                 }
                 .padding(.bottom, 40)
             }
@@ -72,21 +80,25 @@ struct HubView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
                         .font(.headline)
-                        .foregroundStyle(PressBoxTheme.textPrimary)
+                        .foregroundStyle(Theme.color.textPrimary)
                     Text(subtitle)
                         .font(.subheadline)
-                        .foregroundStyle(PressBoxTheme.textSecondary)
+                        .foregroundStyle(Theme.color.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer()
-                Image(systemName: "chevron.right.circle.fill")
-                    .font(.title2)
-                    .foregroundStyle(PressBoxTheme.indigo.opacity(0.35))
+                Image(systemName: "chevron.right")
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(Theme.color.textSecondary.opacity(0.5))
             }
             .padding(18)
-            .background(Color.white)
+            .background(Theme.Suite.elevatedSurface)
             .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .shadow(color: .black.opacity(0.08), radius: 16, x: 0, y: 6)
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(Theme.Suite.separator.opacity(0.85), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.06), radius: 14, x: 0, y: 6)
         }
         .buttonStyle(.plain)
     }

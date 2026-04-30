@@ -84,6 +84,25 @@ enum Theme {
         )
     }
 
+    // MARK: - Productivity suite chrome (Google / Apple workspace + partner cues)
+
+    /// Surfaces and accents that read as “Workspace” + RingCentral telephony + Dropbox cloud.
+    enum Suite {
+        /// Apple-style grouped background
+        static let chromeBackground = Color(hex: 0xF5F5F7)
+        static let elevatedSurface = Color(hex: 0xFFFFFF)
+        /// RingCentral-style accent for CTAs and line status
+        static let ringAccent = Color(hex: 0xF47B20)
+        static let lineConnected = Color(hex: 0x00A651)
+        static let lineDisconnected = Color(hex: 0xE01E5A)
+        /// Dropbox-style folder and cloud emphasis
+        static let cloudBlue = Color(hex: 0x0061FF)
+        static let cloudBlueSoft = Color(hex: 0xE8F3FF)
+        /// Google Workspace–style subtle focus ring
+        static let focusBlue = Color(hex: 0x1A73E8).opacity(0.22)
+        static let separator = Color(hex: 0xE5E5EA)
+    }
+
     // MARK: - Aliases
 
     static let color = Palette.self
@@ -114,7 +133,7 @@ extension View {
             .clipShape(RoundedRectangle(cornerRadius: Theme.radius.xl, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: Theme.radius.xl, style: .continuous)
-                    .stroke(Theme.color.border.opacity(0.8), lineWidth: 1)
+                    .stroke(Theme.Suite.separator.opacity(0.7), lineWidth: 1)
             )
             .shadow(
                 color: Theme.Shadow.card.color,
@@ -122,5 +141,17 @@ extension View {
                 x: Theme.Shadow.card.x,
                 y: Theme.Shadow.card.y
             )
+    }
+
+    /// Standard screen fill for Office tabs (Apple Settings / Google-style neutral).
+    func suiteGroupedBackground() -> some View {
+        self.background(Theme.Suite.chromeBackground.ignoresSafeArea())
+    }
+
+    /// Navigation bar + tab tint consistent with workspace chrome.
+    func suiteNavigationChrome() -> some View {
+        self
+            .toolbarBackground(Theme.Suite.elevatedSurface, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
     }
 }

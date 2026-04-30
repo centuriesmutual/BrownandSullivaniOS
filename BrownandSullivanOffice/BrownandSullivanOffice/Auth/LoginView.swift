@@ -12,10 +12,7 @@ struct LoginView: View {
 
     var body: some View {
         ZStack {
-            Theme.gradient.loginBg.ignoresSafeArea()
-
-            // Subtle dotted overlay (matches the SVG background pattern from globals.css)
-            Color.white.opacity(0.03).ignoresSafeArea()
+            Theme.Suite.chromeBackground.ignoresSafeArea()
 
             ScrollView {
                 VStack {

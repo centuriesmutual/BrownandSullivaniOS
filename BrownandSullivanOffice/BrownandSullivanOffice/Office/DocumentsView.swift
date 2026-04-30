@@ -18,19 +18,27 @@ struct DocumentsView: View {
     var body: some View {
         List {
             Section {
+                CloudSyncStatusRow(isSynced: true, subtitle: "Policy library")
+                    .listRowInsets(EdgeInsets(top: 12, leading: 0, bottom: 12, trailing: 0))
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+            }
+            Section {
                 ForEach(filtered) { doc in
-                    HStack(alignment: .top, spacing: 12) {
-                        Image(systemName: "doc.text.fill")
-                            .font(.title2)
-                            .foregroundStyle(Theme.color.info)
-                            .frame(width: 36, height: 36)
-                            .background(Theme.color.info.opacity(0.12))
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    HStack(alignment: .top, spacing: 14) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .fill(Theme.Suite.cloudBlueSoft.opacity(0.7))
+                            Image(systemName: "doc.text.fill")
+                                .font(.title3)
+                                .foregroundStyle(Theme.Suite.cloudBlue)
+                        }
+                        .frame(width: 44, height: 44)
                         VStack(alignment: .leading, spacing: 6) {
                             Text(doc.name)
                                 .font(.subheadline.weight(.semibold))
                             HStack(spacing: 8) {
-                                ChipBadge(text: doc.category, color: Theme.color.primary)
+                                ChipBadge(text: doc.category, color: Theme.Suite.cloudBlue)
                                 Text(doc.status)
                                     .font(.caption2.weight(.medium))
                                     .foregroundStyle(Theme.color.textSecondary)
@@ -44,15 +52,16 @@ struct DocumentsView: View {
                             .foregroundStyle(Theme.color.textSecondary)
                         }
                     }
-                    .padding(.vertical, 4)
+                    .padding(.vertical, 6)
                 }
             } header: {
                 Text("Library")
             }
         }
         .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .suiteGroupedBackground()
         .searchable(text: $query, prompt: "Search documents")
-        .background(Theme.color.background.ignoresSafeArea())
     }
 }
 

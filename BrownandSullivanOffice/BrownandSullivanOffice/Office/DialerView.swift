@@ -1,5 +1,6 @@
 import SwiftUI
 
+/// RingCentral-inspired phone: line status, HD VoIP chrome, keypad, and recent callbacks.
 struct DialerView: View {
     @EnvironmentObject private var app: AppState
     @State private var phoneNumber: String = ""
@@ -8,8 +9,18 @@ struct DialerView: View {
     @State private var connected: Bool = false
     @State private var timer: Timer?
     @State private var showEnrollment = false
+    @State private var keypadMode: KeypadMode = .numbers
 
-    enum CallStatus: String { case idle = "Idle", dialing = "Dialing…", connected = "Connected" }
+    enum CallStatus: String {
+        case idle = "Idle"
+        case dialing = "Dialing…"
+        case connected = "On call"
+    }
+
+    enum KeypadMode: String, CaseIterable, Hashable {
+        case numbers = "123"
+        case recents = "Recent"
+    }
 
     private let keys: [(String, String)] = [
         ("1", ""), ("2", "ABC"), ("3", "DEF"),
@@ -21,9 +32,24 @@ struct DialerView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: Theme.spacing.l) {
-                connectionStatusBar
-                dialerCard
-                quickActionsCard
+                voipLineCard
+                Picker("", selection: $keypadMode) {
+                    ForEach(KeypadMode.allCases, id: \.self) { m in
+                        Text(m.rawValue).tag(m)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal, 2)
+
+                if keypadMode == .numbers {
+                    numberDisplay
+                    activeCallStrip
+                    dialPadGrid
+                    callControlRow
+                    communicationsShortcuts
+                } else {
+                    recentsListCard
+                }
             }
             .padding(Theme.spacing.l)
         }
@@ -32,152 +58,263 @@ struct DialerView: View {
         }
     }
 
-    // MARK: - Connection bar
+    // MARK: - Line / PBX (RingCentral-style)
 
-    private var connectionStatusBar: some View {
-        HStack {
-            HStack(spacing: 8) {
-                StatusDot(color: connected ? Theme.color.success : Theme.color.danger,
-                          pulse: connected)
-                Text(connected ? "Connected to PBX" : "Disconnected")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Theme.color.textPrimary)
+    private var voipLineCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill((connected ? Theme.Suite.lineConnected : Theme.Suite.lineDisconnected).opacity(0.15))
+                        .frame(width: 44, height: 44)
+                    Image(systemName: "phone.connection")
+                        .font(.title3)
+                        .foregroundStyle(connected ? Theme.Suite.lineConnected : Theme.Suite.lineDisconnected)
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(connected ? "Business line · Registered" : "Business line · Not registered")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Theme.color.textPrimary)
+                    Text(connected ? "VoIP · HD Voice · TLS" : "Connect to place calls and receive queue")
+                        .font(.caption)
+                        .foregroundStyle(Theme.color.textSecondary)
+                }
+                Spacer()
+                Button {
+                    connected.toggle()
+                } label: {
+                    Text(connected ? "Disconnect" : "Connect")
+                        .font(.subheadline.weight(.bold))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(connected ? Theme.Suite.lineDisconnected.opacity(0.12) : Theme.Suite.ringAccent.opacity(0.15))
+                        .foregroundStyle(connected ? Theme.Suite.lineDisconnected : Theme.Suite.ringAccent)
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
             }
-            Spacer()
-            Button {
-                connected.toggle()
-            } label: {
-                Text(connected ? "Disconnect" : "Connect")
-                    .font(.subheadline.weight(.semibold))
-                    .padding(.horizontal, 14).padding(.vertical, 8)
-                    .background((connected ? Theme.color.danger : Theme.color.success).opacity(0.12))
-                    .foregroundStyle(connected ? Theme.color.danger : Theme.color.success)
-                    .clipShape(Capsule())
+            Divider().opacity(0.5)
+            HStack {
+                Label("Presence", systemImage: "dot.radiowaves.left.and.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.color.textSecondary)
+                Spacer()
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark.shield.fill")
+                        .foregroundStyle(Theme.Suite.lineConnected)
+                    Text("Secure RTP")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(Theme.color.textSecondary)
+                }
             }
-            .buttonStyle(.plain)
         }
-        .padding(14)
-        .dashboardCardStyle()
+        .padding(16)
+        .background(Theme.Suite.elevatedSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Theme.Suite.separator.opacity(0.8), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.06), radius: 12, x: 0, y: 4)
     }
 
-    // MARK: - Dialer
+    private var numberDisplay: some View {
+        Text(phoneNumber.isEmpty ? " " : phoneNumber)
+            .font(.system(size: 34, weight: .medium, design: .rounded))
+            .foregroundStyle(phoneNumber.isEmpty ? Theme.color.textSecondary.opacity(0.35) : Theme.color.textPrimary)
+            .minimumScaleFactor(0.5)
+            .lineLimit(1)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 18)
+            .padding(.horizontal, 16)
+            .background(Theme.Suite.chromeBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(Theme.Suite.focusBlue, lineWidth: phoneNumber.isEmpty ? 1 : 2)
+            )
+    }
 
-    private var dialerCard: some View {
-        TitledCard("Dialer", icon: "phone.fill") {
-            VStack(spacing: Theme.spacing.l) {
-                Text(phoneNumber.isEmpty ? "Enter number" : phoneNumber)
-                    .font(.system(size: 28, weight: .semibold, design: .rounded))
-                    .foregroundStyle(phoneNumber.isEmpty ? Theme.color.textSecondary : Theme.color.textPrimary)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(Theme.color.surfaceMuted)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+    @ViewBuilder
+    private var activeCallStrip: some View {
+        if callStatus != .idle {
+            HStack(spacing: 12) {
+                StatusDot(color: callStatus == .connected ? Theme.Suite.lineConnected : Theme.color.warning,
+                          pulse: callStatus == .dialing)
+                Text(callStatus.rawValue)
+                    .font(.subheadline.weight(.semibold))
+                Spacer()
+                if callStatus == .connected {
+                    Text(formatDuration(callSeconds))
+                        .font(.subheadline.monospacedDigit().weight(.medium))
+                        .foregroundStyle(Theme.color.textSecondary)
+                }
+            }
+            .padding(12)
+            .background(Theme.Suite.cloudBlueSoft.opacity(0.35))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+    }
 
-                if callStatus != .idle {
-                    HStack(spacing: 10) {
-                        StatusDot(color: callStatus == .connected ? Theme.color.success : Theme.color.warning,
-                                  pulse: callStatus == .dialing)
-                        Text(callStatus.rawValue).font(.subheadline.weight(.semibold))
-                        Spacer()
-                        if callStatus == .connected {
-                            Text(formatDuration(callSeconds))
-                                .font(.subheadline.monospacedDigit())
+    private var dialPadGrid: some View {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 14), count: 3), spacing: 14) {
+            ForEach(keys, id: \.0) { digit, letters in
+                Button { tapKey(digit) } label: {
+                    VStack(spacing: 4) {
+                        Text(digit)
+                            .font(.system(size: 28, weight: .medium, design: .rounded))
+                        if !letters.isEmpty {
+                            Text(letters)
+                                .font(.system(size: 10, weight: .semibold, design: .rounded))
                                 .foregroundStyle(Theme.color.textSecondary)
                         }
                     }
-                    .padding(10)
-                    .background(Theme.color.surfaceMuted)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(Theme.Suite.elevatedSurface)
+                    .clipShape(Circle())
+                    .overlay(
+                        Circle()
+                            .stroke(Theme.Suite.separator, lineWidth: 1)
+                    )
+                    .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
                 }
-
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3),
-                          spacing: 12) {
-                    ForEach(keys, id: \.0) { (digit, letters) in
-                        Button { tapKey(digit) } label: {
-                            VStack(spacing: 2) {
-                                Text(digit).font(.system(size: 26, weight: .medium))
-                                Text(letters)
-                                    .font(.caption2)
-                                    .foregroundStyle(Theme.color.textSecondary)
-                                    .frame(height: 10)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(Theme.color.surfaceMuted)
-                            .clipShape(Circle())
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(!connected)
-                    }
-                }
-                .opacity(connected ? 1 : 0.5)
-
-                HStack(spacing: 16) {
-                    actionButton(icon: "delete.left.fill", color: Theme.color.secondary) {
-                        if !phoneNumber.isEmpty { phoneNumber.removeLast() }
-                    }
-                    .disabled(phoneNumber.isEmpty)
-
-                    Button(action: toggleCall) {
-                        Image(systemName: callStatus == .idle ? "phone.fill" : "phone.down.fill")
-                            .font(.title2)
-                            .frame(width: 64, height: 64)
-                            .background(callStatus == .idle ? Theme.color.success : Theme.color.danger)
-                            .foregroundStyle(.white)
-                            .clipShape(Circle())
-                            .shadow(color: (callStatus == .idle ? Theme.color.success : Theme.color.danger).opacity(0.4),
-                                    radius: 10, y: 4)
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(!connected || phoneNumber.isEmpty)
-
-                    actionButton(icon: "person.crop.circle.badge.plus",
-                                 color: Theme.color.info) {
-                        showEnrollment = true
-                    }
-                    .disabled(phoneNumber.isEmpty)
-                }
+                .buttonStyle(.plain)
+                .disabled(!connected)
             }
         }
+        .opacity(connected ? 1 : 0.45)
     }
 
-    private func actionButton(icon: String, color: Color, action: @escaping () -> Void) -> some View {
+    private var callControlRow: some View {
+        HStack(spacing: 20) {
+            dialActionButton(icon: "delete.left.fill", tint: Theme.color.secondary) {
+                if !phoneNumber.isEmpty { phoneNumber.removeLast() }
+            }
+            .disabled(phoneNumber.isEmpty)
+
+            Button(action: toggleCall) {
+                Image(systemName: callStatus == .idle ? "phone.fill" : "phone.down.fill")
+                    .font(.title2)
+                    .frame(width: 72, height: 72)
+                    .background(callStatus == .idle ? Theme.Suite.lineConnected : Theme.Suite.lineDisconnected)
+                    .foregroundStyle(.white)
+                    .clipShape(Circle())
+                    .shadow(color: (callStatus == .idle ? Theme.Suite.lineConnected : Theme.Suite.lineDisconnected).opacity(0.45),
+                            radius: 16, y: 6)
+            }
+            .buttonStyle(.plain)
+            .disabled(!connected || phoneNumber.isEmpty)
+
+            dialActionButton(icon: "person.crop.circle.badge.plus", tint: Theme.Suite.cloudBlue) {
+                showEnrollment = true
+            }
+            .disabled(phoneNumber.isEmpty)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private func dialActionButton(icon: String, tint: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: icon)
                 .font(.title3)
                 .frame(width: 56, height: 56)
-                .background(color.opacity(0.12))
-                .foregroundStyle(color)
+                .background(tint.opacity(0.12))
+                .foregroundStyle(tint)
                 .clipShape(Circle())
+                .overlay(Circle().stroke(tint.opacity(0.2), lineWidth: 1))
         }
         .buttonStyle(.plain)
     }
 
-    private var quickActionsCard: some View {
-        TitledCard("Recent", icon: "clock.fill") {
+    private var communicationsShortcuts: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(InText.shortcutsLabel)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Theme.color.textSecondary)
+            HStack(spacing: 0) {
+                commChip(icon: "record.circle", title: "Voicemail")
+                commChip(icon: "bubble.left.and.bubble.right.fill", title: "SMS")
+                commChip(icon: "person.crop.rectangle.stack", title: "Contacts")
+                commChip(icon: "video.fill", title: "Meet")
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.Suite.elevatedSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Theme.Suite.separator.opacity(0.7), lineWidth: 1)
+        )
+    }
+
+    private func commChip(icon: String, title: String) -> some View {
+        Button {} label: {
+            VStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.title3)
+                    .foregroundStyle(Theme.color.primary)
+                Text(title)
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(Theme.color.textSecondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var recentsListCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("Recent calls", systemImage: "clock.arrow.circlepath")
+                .font(.headline)
+                .foregroundStyle(Theme.color.textPrimary)
             VStack(spacing: 0) {
                 ForEach(Array(app.recentCalls.enumerated()), id: \.element.id) { idx, call in
                     HStack(spacing: 12) {
-                        Avatar(initials: call.initials, size: 36)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(call.name).font(.subheadline.weight(.semibold))
-                            Text(call.phone).font(.caption).foregroundStyle(Theme.color.textSecondary)
+                        Avatar(initials: call.initials, size: 42,
+                               gradient: [Theme.Suite.ringAccent.opacity(0.85), Theme.color.primary])
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(call.name)
+                                .font(.subheadline.weight(.semibold))
+                            Text(call.phone)
+                                .font(.caption)
+                                .foregroundStyle(Theme.color.textSecondary)
                         }
                         Spacer()
-                        Button { phoneNumber = stripPhone(call.phone) } label: {
-                            Image(systemName: "phone.fill")
-                                .padding(8)
-                                .background(Theme.color.success.opacity(0.12))
-                                .foregroundStyle(Theme.color.success)
-                                .clipShape(Circle())
+                        VStack(alignment: .trailing, spacing: 6) {
+                            Text(call.lastCall)
+                                .font(.caption2)
+                                .foregroundStyle(Theme.color.textSecondary)
+                            Button {
+                                phoneNumber = stripPhone(call.phone)
+                                keypadMode = .numbers
+                            } label: {
+                                Image(systemName: "phone.circle.fill")
+                                    .font(.title2)
+                                    .foregroundStyle(Theme.Suite.lineConnected)
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                     }
-                    .padding(.vertical, 8)
-                    if idx < app.recentCalls.count - 1 { Divider() }
+                    .padding(.vertical, 10)
+                    if idx < app.recentCalls.count - 1 {
+                        Divider()
+                    }
                 }
             }
         }
+        .padding(16)
+        .background(Theme.Suite.elevatedSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Theme.Suite.separator.opacity(0.8), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 4)
     }
 
     // MARK: - Helpers
@@ -211,7 +348,8 @@ struct DialerView: View {
     }
 
     private func stopTimer() {
-        timer?.invalidate(); timer = nil
+        timer?.invalidate()
+        timer = nil
     }
 
     private func formatDuration(_ s: Int) -> String {
@@ -221,6 +359,10 @@ struct DialerView: View {
     private func stripPhone(_ p: String) -> String {
         p.filter { $0.isNumber }
     }
+}
+
+private enum InText {
+    static let shortcutsLabel = "Workspace shortcuts"
 }
 
 private struct EnrollmentSheet: View {

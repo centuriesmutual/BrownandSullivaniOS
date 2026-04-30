@@ -23,12 +23,13 @@ struct OfficeRootView: View {
         NavigationStack {
             content(for: tab)
                 .navigationTitle(tab.title)
-                .navigationBarTitleDisplayMode(.inline)
+                .navigationBarTitleDisplayMode(tab == .home ? .large : .inline)
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) { brandMark }
                     ToolbarItem(placement: .topBarTrailing) { profileMenu }
                 }
-                .background(Theme.color.background.ignoresSafeArea())
+                .suiteGroupedBackground()
+                .suiteNavigationChrome()
         }
     }
 
@@ -49,12 +50,18 @@ struct OfficeRootView: View {
     }
 
     private var brandMark: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "building.2.fill")
+        HStack(spacing: 8) {
+            Image(systemName: "square.grid.2x2.fill")
+                .font(.title3)
                 .foregroundStyle(Theme.gradient.primary)
-            Text("Office")
-                .font(.headline)
-                .foregroundStyle(Theme.color.textPrimary)
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Workspace")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.color.textSecondary)
+                Text("Office")
+                    .font(.headline)
+                    .foregroundStyle(Theme.color.textPrimary)
+            }
         }
     }
 
