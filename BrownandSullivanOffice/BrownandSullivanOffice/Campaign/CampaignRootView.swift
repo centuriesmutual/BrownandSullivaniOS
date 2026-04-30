@@ -17,7 +17,7 @@ struct CampaignRootView: View {
             ForEach(CampaignTab.allCases) { tab in
                 NavigationStack {
                     tabContent(tab)
-                        .navigationTitle("Marketing Hub")
+                        .navigationTitle(tab.title)
                         .navigationBarTitleDisplayMode(.inline)
                         .toolbar { toolbar }
                 }

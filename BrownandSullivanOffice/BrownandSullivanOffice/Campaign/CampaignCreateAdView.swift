@@ -2,6 +2,7 @@ import SwiftUI
 
 /// `dashboard/create-ad/page.tsx`
 struct CampaignCreateAdView: View {
+    @EnvironmentObject private var app: AppState
     @State private var title = ""
     @State private var desc = ""
     @State private var mediaType = "image"
@@ -51,7 +52,20 @@ struct CampaignCreateAdView: View {
                 Button("Close") { dismiss() }
             }
             ToolbarItem(placement: .confirmationAction) {
-                Button("Save") { dismiss() }
+                Button("Save") {
+                    app.recordDraftAdCampaign(
+                        title: title,
+                        targetUrl: targetUrl,
+                        budget: budget,
+                        mediaType: mediaType,
+                        audience: audience,
+                        placement: placement,
+                        start: start,
+                        end: end,
+                        description: desc
+                    )
+                    dismiss()
+                }
                     .disabled(title.isEmpty || targetUrl.isEmpty)
             }
         }
@@ -59,5 +73,5 @@ struct CampaignCreateAdView: View {
 }
 
 #Preview {
-    NavigationStack { CampaignCreateAdView() }
+    NavigationStack { CampaignCreateAdView().environmentObject(AppState()) }
 }

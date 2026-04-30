@@ -10,6 +10,8 @@ struct CampaignDashboardView: View {
     @State private var newTitle = ""
     @State private var newTime = ""
     @State private var newType: PressEventKind = .meeting
+    @State private var taskDetail: MarketingTaskItem?
+    @State private var taskStatusPick = "In Progress"
 
     private let calendar = Calendar.current
     private let weekdayLetters: [(Int, String)] = [
@@ -29,26 +31,54 @@ struct CampaignDashboardView: View {
         .sheet(isPresented: $showAllTasks) {
             NavigationStack {
                 List(app.marketingTasks) { t in
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(t.title).font(.headline)
-                        Text(t.description).font(.caption).foregroundStyle(PressBoxTheme.textSecondary)
-                        HStack {
-                            Text("Due: \(t.dueDate)").font(.caption2)
-                            Text("•").font(.caption2)
-                            Text("\(t.priority) priority").font(.caption2)
-                        }
-                        Text(t.status).font(.caption2.weight(.semibold))
-                            .padding(.horizontal, 8).padding(.vertical, 4)
-                            .background(PressBoxTheme.chip(for: t.status).0)
-                            .foregroundStyle(PressBoxTheme.chip(for: t.status).1)
-                            .clipShape(Capsule())
+                    Button {
+                        taskDetail = t
+                        taskStatusPick = t.status
+                        showAllTasks = false
+                    } label: {
+                        taskRowContent(t)
                     }
-                    .padding(.vertical, 4)
                 }
                 .navigationTitle("All tasks")
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("Done") { showAllTasks = false }
+                    }
+                }
+            }
+        }
+        .sheet(item: $taskDetail) { task in
+            NavigationStack {
+                Form {
+                    Section("Task") {
+                        Text(task.title).font(.headline)
+                        Text(task.description)
+                            .font(.subheadline)
+                            .foregroundStyle(PressBoxTheme.textSecondary)
+                        LabeledContent("Due", value: task.dueDate)
+                        LabeledContent("Priority", value: task.priority)
+                        LabeledContent("From", value: task.assignedBy)
+                    }
+                    Section("Status") {
+                        Picker("Update status", selection: $taskStatusPick) {
+                            Text("Not Started").tag("Not Started")
+                            Text("In Progress").tag("In Progress")
+                            Text("Completed").tag("Completed")
+                        }
+                    }
+                }
+                .navigationTitle("Task detail")
+                .navigationBarTitleDisplayMode(.inline)
+                .onAppear { taskStatusPick = task.status }
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Close") { taskDetail = nil }
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Save") {
+                            app.updateMarketingTask(id: task.id, status: taskStatusPick)
+                            taskDetail = nil
+                        }
                     }
                 }
             }
@@ -186,24 +216,13 @@ struct CampaignDashboardView: View {
                 .foregroundStyle(PressBoxTheme.indigo)
             }
             ForEach(Array(app.marketingTasks.prefix(3))) { task in
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(task.title).font(.subheadline.weight(.medium))
-                        Text("Due: \(task.dueDate) • \(task.priority) Priority")
-                            .font(.caption)
-                            .foregroundStyle(PressBoxTheme.textSecondary)
-                    }
-                    Spacer()
-                    Text(task.status)
-                        .font(.caption2.weight(.semibold))
-                        .padding(.horizontal, 8).padding(.vertical, 4)
-                        .background(PressBoxTheme.chip(for: task.status).0)
-                        .foregroundStyle(PressBoxTheme.chip(for: task.status).1)
-                        .clipShape(Capsule())
+                Button {
+                    taskDetail = task
+                    taskStatusPick = task.status
+                } label: {
+                    taskRowSummary(task)
                 }
-                .padding(12)
-                .background(PressBoxTheme.background)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .buttonStyle(.plain)
             }
         }
         .padding(16)
@@ -297,6 +316,47 @@ struct CampaignDashboardView: View {
         let m = calendar.component(.month, from: displayedMonth)
         guard let d = calendar.date(from: DateComponents(year: y, month: m, day: day)) else { return false }
         return calendar.isDateInToday(d)
+    }
+
+    @ViewBuilder
+    private func taskRowSummary(_ task: MarketingTaskItem) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(task.title).font(.subheadline.weight(.medium))
+                Text("Due: \(task.dueDate) • \(task.priority) Priority")
+                    .font(.caption)
+                    .foregroundStyle(PressBoxTheme.textSecondary)
+            }
+            Spacer()
+            Text(task.status)
+                .font(.caption2.weight(.semibold))
+                .padding(.horizontal, 8).padding(.vertical, 4)
+                .background(PressBoxTheme.chip(for: task.status).0)
+                .foregroundStyle(PressBoxTheme.chip(for: task.status).1)
+                .clipShape(Capsule())
+        }
+        .padding(12)
+        .background(PressBoxTheme.background)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
+
+    @ViewBuilder
+    private func taskRowContent(_ t: MarketingTaskItem) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(t.title).font(.headline)
+            Text(t.description).font(.caption).foregroundStyle(PressBoxTheme.textSecondary)
+            HStack {
+                Text("Due: \(t.dueDate)").font(.caption2)
+                Text("•").font(.caption2)
+                Text("\(t.priority) priority").font(.caption2)
+            }
+            Text(t.status).font(.caption2.weight(.semibold))
+                .padding(.horizontal, 8).padding(.vertical, 4)
+                .background(PressBoxTheme.chip(for: t.status).0)
+                .foregroundStyle(PressBoxTheme.chip(for: t.status).1)
+                .clipShape(Capsule())
+        }
+        .padding(.vertical, 4)
     }
 
     private func saveEvent() {

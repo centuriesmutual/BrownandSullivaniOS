@@ -47,6 +47,9 @@ final class AppState: ObservableObject {
     // MARK: - Drive
     @Published var driveFiles: [DriveFile] = AppState.seedDrive
 
+    // MARK: - Documents hub
+    @Published var officeDocuments: [OfficeDocumentItem] = AppState.seedOfficeDocuments
+
     // MARK: - Chat
     @Published var chatContacts: [ChatContact] = AppState.seedContacts
     @Published var chatThreads: [UUID: [ChatMessage]] = [:]
@@ -88,12 +91,15 @@ final class AppState: ObservableObject {
     @Published var performanceDays: [PerformanceDayRow] = AppState.seedPerformanceDays
     @Published var campaignSummaries: [NamedCampaignSummary] = AppState.seedCampaignSummaries
     @Published var biWeekEngagement: [BIDayPoint] = AppState.seedBIWeek
+    @Published var contentSubmissions: [ContentSubmission] = AppState.seedContentSubmissions
 
     @Published var shortcuts: [OfficeAppShortcut] = [
         .init(title: "Phone",     icon: "phone.fill",      gradient: [Color(hex: 0x22C55E), Color(hex: 0x16A34A)], destinationTab: .dialer),
         .init(title: "Mail",      icon: "envelope.fill",   gradient: [Color(hex: 0x3B82F6), Color(hex: 0x2563EB)], destinationTab: .email),
         .init(title: "Calendar",  icon: "calendar",        gradient: [Color(hex: 0xEF4444), Color(hex: 0xDC2626)], destinationTab: .calendar),
         .init(title: "Drive",     icon: "folder.fill",     gradient: [Color(hex: 0xF59E0B), Color(hex: 0xD97706)], destinationTab: .drive),
+        .init(title: "Docs",      icon: "doc.text.fill",   gradient: [Color(hex: 0x6366F1), Color(hex: 0x4F46E5)], destinationTab: .documents),
+        .init(title: "Enroll",    icon: "person.text.rectangle.fill", gradient: [Color(hex: 0x14B8A6), Color(hex: 0x0D9488)], destinationTab: .enrollment),
         .init(title: "Chat",      icon: "message.fill",    gradient: [Color(hex: 0x8B5CF6), Color(hex: 0x7C3AED)], destinationTab: .chat),
         .init(title: "Analytics", icon: "chart.bar.fill",  gradient: [Color(hex: 0x0EA5E9), Color(hex: 0x0284C7)], destinationTab: .analytics),
         .init(title: "Settings",  icon: "gearshape.fill",  gradient: [Color(hex: 0x64748B), Color(hex: 0x475569)], destinationTab: .settings),
@@ -183,6 +189,38 @@ final class AppState: ObservableObject {
             type: type
         )
         campaignEvents.append(row)
+    }
+
+    func submitBlogContent(title: String, boxURL: String, publishDate: Date, notes: String) {
+        let sub = ContentSubmission(
+            id: UUID(),
+            title: title.trimmingCharacters(in: .whitespacesAndNewlines),
+            boxUrl: boxURL.trimmingCharacters(in: .whitespacesAndNewlines),
+            publishDate: publishDate,
+            notes: notes.trimmingCharacters(in: .whitespacesAndNewlines),
+            status: "Pending review",
+            submittedAt: Date()
+        )
+        contentSubmissions.insert(sub, at: 0)
+    }
+
+    func updateMarketingTask(id: Int, status: String) {
+        guard let i = marketingTasks.firstIndex(where: { $0.id == id }) else { return }
+        marketingTasks[i].status = status
+    }
+
+    func recordDraftAdCampaign(title: String, targetUrl: String, budget: String, mediaType: String, audience: String, placement: String, start: Date, end: Date, description: String) {
+        let nextId = (campaignSummaries.map(\.id).max() ?? 0) + 1
+        let cleaned = budget.replacingOccurrences(of: ",", with: "").replacingOccurrences(of: "$", with: "")
+        let spend = Double(cleaned) ?? 0
+        let df = DateFormatter()
+        df.dateStyle = .short
+        let tail = " · \(mediaType) · \(placement) · \(df.string(from: start))–\(df.string(from: end))"
+        let extra = audience.isEmpty ? "" : " · \(audience)"
+        let descBit = description.isEmpty ? "" : " · " + String(description.prefix(40))
+        let urlBit = targetUrl.isEmpty ? "" : " · " + String(targetUrl.prefix(48))
+        let name = title + tail + extra + descBit + urlBit
+        campaignSummaries.append(.init(id: nextId, name: name, spend: spend, revenue: 0, roas: spend > 0 ? 0 : 0))
     }
 
     private static func capLocalPart(_ s: String) -> String {
@@ -339,6 +377,16 @@ extension AppState {
               agent: "AGT-78945",      duration: "—",
               body: "Application APP-2024-00321 submitted successfully. Premium Coverage Plan, family, $350/mo."),
     ]
+
+    static let seedOfficeDocuments: [OfficeDocumentItem] = [
+        .init(name: "Carrier appointment scripting.pdf", category: "Compliance", status: "Current", updated: "Apr 12", owner: "Compliance"),
+        .init(name: "EOI disclosure checklist.docx", category: "Sales", status: "Current", updated: "Apr 8", owner: "You"),
+        .init(name: "Application quality standards.pdf", category: "Operations", status: "Review", updated: "Apr 4", owner: "QA"),
+        .init(name: "Medicare basics — agent guide.pdf", category: "Training", status: "Current", updated: "Mar 28", owner: "L&D"),
+        .init(name: "Identity & verification SOP.docx", category: "Compliance", status: "Current", updated: "Mar 22", owner: "Compliance"),
+    ]
+
+    static let seedContentSubmissions: [ContentSubmission] = []
 
     static let seedDrive: [DriveFile] = [
         .init(name: "Q2 Reports",          kind: .folder, size: "—",      modified: "Apr 12", owner: "You"),

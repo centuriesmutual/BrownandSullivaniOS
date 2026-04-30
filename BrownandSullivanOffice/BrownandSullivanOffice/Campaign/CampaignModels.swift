@@ -38,6 +38,18 @@ struct MarketingTaskItem: Identifiable, Hashable {
     let assignedBy: String
 }
 
+// MARK: - Content submissions (submit-content flow)
+
+struct ContentSubmission: Identifiable, Hashable {
+    let id: UUID
+    var title: String
+    var boxUrl: String
+    var publishDate: Date
+    var notes: String
+    var status: String
+    var submittedAt: Date
+}
+
 // MARK: - Messaging (Campaign hub)
 
 enum CampaignPresence: String, Hashable {

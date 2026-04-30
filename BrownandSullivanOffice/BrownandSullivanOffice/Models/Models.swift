@@ -273,6 +273,17 @@ struct AdminActivity: Identifiable, Hashable {
     }
 }
 
+// MARK: - Documents (policy hub — mirrors `app/documents` style lists)
+
+struct OfficeDocumentItem: Identifiable, Hashable {
+    let id = UUID()
+    let name: String
+    let category: String
+    let status: String
+    let updated: String
+    let owner: String
+}
+
 // MARK: - Office app launcher items (the "iOS app grid" on the home tab)
 
 struct OfficeAppShortcut: Identifiable, Hashable {
@@ -286,7 +297,7 @@ struct OfficeAppShortcut: Identifiable, Hashable {
 // MARK: - Office tabs
 
 enum OfficeTab: String, CaseIterable, Identifiable {
-    case home, dialer, email, calendar, drive, chat, analytics, settings
+    case home, dialer, email, calendar, drive, chat, analytics, settings, documents, enrollment
 
     var id: String { rawValue }
 
@@ -300,6 +311,8 @@ enum OfficeTab: String, CaseIterable, Identifiable {
         case .chat: "Chat"
         case .analytics: "Analytics"
         case .settings: "Settings"
+        case .documents: "Documents"
+        case .enrollment: "Enrollment"
         }
     }
 
@@ -313,6 +326,8 @@ enum OfficeTab: String, CaseIterable, Identifiable {
         case .chat: "message.fill"
         case .analytics: "chart.bar.fill"
         case .settings: "gearshape.fill"
+        case .documents: "doc.text.fill"
+        case .enrollment: "person.text.rectangle.fill"
         }
     }
 }

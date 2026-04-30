@@ -35,14 +35,16 @@ struct OfficeRootView: View {
     @ViewBuilder
     private func content(for tab: OfficeTab) -> some View {
         switch tab {
-        case .home:      HomeView()
-        case .dialer:    DialerView()
-        case .email:     EmailView()
-        case .calendar:  CalendarTabView()
-        case .drive:     DriveView()
-        case .chat:      ChatView()
-        case .analytics: AnalyticsView()
-        case .settings:  SettingsView()
+        case .home:       HomeView()
+        case .dialer:     DialerView()
+        case .email:      EmailView()
+        case .calendar:   CalendarTabView()
+        case .drive:      DriveView()
+        case .chat:       ChatView()
+        case .analytics:  AnalyticsView()
+        case .settings:   SettingsView()
+        case .documents:  DocumentsView()
+        case .enrollment: EnrollmentView()
         }
     }
 

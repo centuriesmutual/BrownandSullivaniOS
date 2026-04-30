@@ -27,6 +27,7 @@ enum PressBoxTheme {
         case "Draft": (Color(hex: 0xE5E7EB), Color(hex: 0x374151))
         case "Updated": (Color(hex: 0xDBEAFE), Color(hex: 0x1E40AF))
         case "Declined": (Color(hex: 0xFEE2E2), Color(hex: 0x991B1B))
+        case "Pending review": (Color(hex: 0xE0E7FF), Color(hex: 0x3730A3))
         case "pending": (Color(hex: 0xFEF9C3), Color(hex: 0x854D0E))
         case "completed": (Color(hex: 0xD1FAE5), Color(hex: 0x065F46))
         default: (PressBoxTheme.indigoLight.opacity(0.6), PressBoxTheme.indigoDark)

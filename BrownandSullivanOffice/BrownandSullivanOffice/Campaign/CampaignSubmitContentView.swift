@@ -2,16 +2,28 @@ import SwiftUI
 
 /// `dashboard/submit-content/page.tsx`
 struct CampaignSubmitContentView: View {
+    @EnvironmentObject private var app: AppState
     @State private var title = ""
     @State private var boxUrl = ""
     @State private var publishDate = Date()
     @State private var notes = ""
+    @State private var showSubmittedToast = false
+
+    private static let submittedAtFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateStyle = .medium
+        f.timeStyle = .short
+        return f
+    }()
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 Text("Submit Blog Post or Article")
                     .font(.title2.bold())
+                if !app.contentSubmissions.isEmpty {
+                    recentSection
+                }
                 Group {
                     fieldLabel("Title")
                     TextField("Headline", text: $title)
@@ -57,7 +69,7 @@ struct CampaignSubmitContentView: View {
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(PressBoxTheme.border))
                 }
                 Button {
-                    // TODO: wire API
+                    submit()
                 } label: {
                     Text("Submit")
                         .font(.headline)
@@ -74,6 +86,47 @@ struct CampaignSubmitContentView: View {
             .padding(16)
         }
         .background(PressBoxTheme.background)
+        .alert("Submitted", isPresented: $showSubmittedToast) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Your request is queued for review.")
+        }
+    }
+
+    private var recentSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Recent submissions")
+                .font(.subheadline.weight(.semibold))
+            ForEach(app.contentSubmissions.prefix(5)) { sub in
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(sub.title).font(.subheadline.weight(.medium))
+                    HStack {
+                        Text(Self.submittedAtFormatter.string(from: sub.submittedAt))
+                        Spacer()
+                        Text(sub.status)
+                            .font(.caption2.weight(.semibold))
+                            .padding(.horizontal, 8).padding(.vertical, 4)
+                            .background(PressBoxTheme.chip(for: sub.status).0)
+                            .foregroundStyle(PressBoxTheme.chip(for: sub.status).1)
+                            .clipShape(Capsule())
+                    }
+                    .font(.caption)
+                    .foregroundStyle(PressBoxTheme.textSecondary)
+                }
+                .padding(10)
+                .background(PressBoxTheme.background)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+            }
+        }
+    }
+
+    private func submit() {
+        app.submitBlogContent(title: title, boxURL: boxUrl, publishDate: publishDate, notes: notes)
+        title = ""
+        boxUrl = ""
+        notes = ""
+        publishDate = Date()
+        showSubmittedToast = true
     }
 
     private func fieldLabel(_ s: String) -> some View {
@@ -82,5 +135,5 @@ struct CampaignSubmitContentView: View {
 }
 
 #Preview {
-    NavigationStack { CampaignSubmitContentView() }
+    NavigationStack { CampaignSubmitContentView().environmentObject(AppState()) }
 }
