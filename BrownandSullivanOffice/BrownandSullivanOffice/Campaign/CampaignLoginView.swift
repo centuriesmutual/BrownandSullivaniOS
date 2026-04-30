@@ -104,6 +104,17 @@ struct CampaignLoginView: View {
             }
             .buttonStyle(.plain)
 
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Popular workspace")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(PressBoxTheme.textPrimary)
+                Text("Editors and leads see trending highlights first. Use an address with editor, director, lead, creator, partner, popular, trending, or vip in the part before @, add +popular before @, or sign in with a @partners.pressbox.marketing account.")
+                    .font(.caption2)
+                    .foregroundStyle(PressBoxTheme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.top, 4)
+
             HStack(spacing: 4) {
                 Text("Don't have an account?").font(.footnote)
                 Button("Sign up") {}

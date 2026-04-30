@@ -50,6 +50,14 @@ struct ContentSubmission: Identifiable, Hashable {
     var submittedAt: Date
 }
 
+// MARK: - Login experience (trending / “popular” workspace for select users)
+
+enum CampaignExperienceTier: String, Equatable, CaseIterable {
+    case standard
+    /// Editors, leads, and tagged accounts see trending highlights and land on Intelligence first.
+    case popular
+}
+
 // MARK: - Messaging (Campaign hub)
 
 enum CampaignPresence: String, Hashable {

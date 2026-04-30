@@ -81,6 +81,9 @@ final class AppState: ObservableObject {
     // MARK: - PressBox / Campaign (Marketing Hub)
     @Published var campaignUserName: String = "Jordan Lee"
     @Published var campaignUserEmail: String = "jordan.lee@pressbox.marketing"
+    @Published var campaignUserInitials: String = "JL"
+    /// Set from email on sign-in (`popular` unlocks trending UI).
+    @Published private(set) var campaignExperienceTier: CampaignExperienceTier = .standard
     @Published var campaignEvents: [PressEvent] = AppState.seedPressEvents
     @Published var marketingTasks: [MarketingTaskItem] = AppState.seedMarketingTasks
     @Published var campaignInbox: [CampaignInboxPerson] = AppState.seedCampaignInbox
@@ -122,13 +125,16 @@ final class AppState: ObservableObject {
         guard !email.isEmpty, !password.isEmpty else { return false }
         campaignUserEmail = email
         campaignUserName = email.split(separator: "@").first.map { capLocalPart(String($0)) } ?? email
+        campaignUserInitials = Self.initialsFromDisplayName(campaignUserName)
+        campaignExperienceTier = Self.campaignTier(forEmail: email)
         activeRoot = .campaign
-        campaignTab = .dashboard
+        campaignTab = campaignExperienceTier == .popular ? .intelligence : .dashboard
         return true
     }
 
     func signOut() {
         activeRoot = .hub
+        campaignExperienceTier = .standard
     }
 
     func goToHub() {
@@ -225,6 +231,56 @@ final class AppState: ObservableObject {
 
     private static func capLocalPart(_ s: String) -> String {
         s.split(separator: ".").map { $0.capitalized }.joined(separator: " ")
+    }
+
+    private static func initialsFromDisplayName(_ name: String) -> String {
+        let parts = name.split(separator: " ").filter { !$0.isEmpty }
+        if parts.count >= 2 {
+            return String(parts[0].prefix(1) + parts[1].prefix(1)).uppercased()
+        }
+        return String(name.prefix(2)).uppercased()
+    }
+
+    /// Editors, leads, partner domains, and `+popular` / `+vip` aliases unlock the Popular workspace.
+    private static func campaignTier(forEmail email: String) -> CampaignExperienceTier {
+        let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let local = trimmed.split(separator: "@").first.map(String.init) ?? trimmed
+
+        if trimmed.contains("+popular") || trimmed.contains("+trending") || trimmed.contains("+vip") {
+            return .popular
+        }
+        if trimmed.hasSuffix("@partners.pressbox.marketing") {
+            return .popular
+        }
+
+        let triggers: Set<String> = ["vip", "editor", "director", "lead", "creator", "partner", "popular", "trending"]
+        let segments = local.split(separator: ".").map { String($0).lowercased() }
+        if segments.contains(where: { triggers.contains($0) }) {
+            return .popular
+        }
+
+        return .standard
+    }
+
+    // MARK: - Campaign trending (for Popular tier)
+
+    var campaignUserFirstName: String {
+        campaignUserName.split(separator: " ").first.map(String.init) ?? campaignUserName
+    }
+
+    /// Articles ranked by a simple “heat” score for Popular surfaces.
+    var trendingIntelligenceArticles: [IntelligenceArticle] {
+        intelligenceArticles.sorted {
+            Self.articleHeat($0) > Self.articleHeat($1)
+        }
+    }
+
+    var trendingCampaignSummaries: [NamedCampaignSummary] {
+        campaignSummaries.sorted { $0.roas > $1.roas }
+    }
+
+    private static func articleHeat(_ a: IntelligenceArticle) -> Int {
+        a.views + a.engagement * 150
     }
 
     // MARK: - Email actions

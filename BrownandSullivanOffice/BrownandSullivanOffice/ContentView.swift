@@ -60,3 +60,14 @@ private func previewState(_ root: AppRoot) -> AppState {
 #Preview("Campaign") {
     ContentView().environmentObject(previewState(.campaign))
 }
+
+#Preview("Campaign Popular") {
+    ContentView().environmentObject(previewCampaignPopular())
+}
+
+@MainActor
+private func previewCampaignPopular() -> AppState {
+    let s = AppState()
+    _ = s.signInCampaign(email: "editor.sarah@pressbox.marketing", password: "demo")
+    return s
+}

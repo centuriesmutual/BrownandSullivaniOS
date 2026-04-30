@@ -57,6 +57,36 @@ struct CampaignRootView: View {
 
     private var toolbar: some ToolbarContent {
         Group {
+            ToolbarItem(placement: .topBarLeading) {
+                HStack(spacing: 10) {
+                    ZStack {
+                        Circle()
+                            .fill(PressBoxTheme.indigo.opacity(0.18))
+                        Text(app.campaignUserInitials)
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(PressBoxTheme.indigoDark)
+                    }
+                    .frame(width: 36, height: 36)
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 6) {
+                            Text(app.campaignUserFirstName)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(PressBoxTheme.textPrimary)
+                            if app.campaignExperienceTier == .popular {
+                                Text("Popular")
+                                    .font(.caption2.weight(.bold))
+                                    .padding(.horizontal, 8).padding(.vertical, 3)
+                                    .background(Color.orange.opacity(0.2))
+                                    .foregroundStyle(Color(hex: 0xC2410C))
+                                    .clipShape(Capsule())
+                            }
+                        }
+                        Text("Marketing Hub")
+                            .font(.caption2)
+                            .foregroundStyle(PressBoxTheme.textSecondary)
+                    }
+                }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 HStack(spacing: 12) {
                     Button {

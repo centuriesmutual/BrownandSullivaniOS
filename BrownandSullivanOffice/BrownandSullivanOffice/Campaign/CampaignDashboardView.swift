@@ -21,6 +21,9 @@ struct CampaignDashboardView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 18) {
+                if app.campaignExperienceTier == .popular {
+                    CampaignPopularHighlightsStrip()
+                }
                 calendarCard
                 tasksCard
                 upcomingEventsCard

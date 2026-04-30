@@ -17,6 +17,9 @@ struct CampaignIntelligenceView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
+                if app.campaignExperienceTier == .popular {
+                    popularIntelligenceBanner
+                }
                 HStack {
                     Picker("Sort", selection: $sortKey) {
                         ForEach(Sort.allCases) { Text($0.rawValue).tag($0) }
@@ -59,6 +62,43 @@ struct CampaignIntelligenceView: View {
             .padding(16)
         }
         .background(PressBoxTheme.background)
+    }
+
+    private var popularIntelligenceBanner: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "sparkles.rectangle.stack.fill")
+                    .foregroundStyle(PressBoxTheme.indigo)
+                Text("Popular workspace")
+                    .font(.headline)
+                Spacer()
+                Image(systemName: "flame.fill")
+                    .foregroundStyle(.orange)
+            }
+            Text("Top-performing content across your org — same order your stakeholders see in the web hub.")
+                .font(.caption)
+                .foregroundStyle(PressBoxTheme.textSecondary)
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(Array(app.trendingIntelligenceArticles.prefix(3))) { a in
+                    HStack {
+                        Text(a.title)
+                            .font(.subheadline.weight(.medium))
+                            .lineLimit(1)
+                        Spacer()
+                        Text("\(a.views.formatted()) views")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(PressBoxTheme.indigo)
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(PressBoxTheme.indigo.opacity(0.15), lineWidth: 1)
+        )
     }
 
     private var sortedArticles: [IntelligenceArticle] {
