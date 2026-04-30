@@ -43,9 +43,10 @@ struct CampaignLoginView: View {
                 Text("PressBox")
                     .font(.system(size: 34, weight: .bold))
                     .foregroundStyle(PressBoxTheme.indigo)
-                Text("Your all-in-one marketing platform")
+                Text("Campaign & marketing workspace — sign in below")
                     .font(.subheadline)
                     .foregroundStyle(PressBoxTheme.textSecondary)
+                    .multilineTextAlignment(.center)
             }
 
             if let error {
@@ -94,7 +95,7 @@ struct CampaignLoginView: View {
             }
 
             Button(action: submit) {
-                Text("Sign in")
+                Text("Sign in to Campaign")
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)

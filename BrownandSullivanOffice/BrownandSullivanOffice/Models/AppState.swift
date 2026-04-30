@@ -6,6 +6,7 @@ import Combine
 enum AppRoot: Equatable {
     case hub
     case officeLogin
+    case adminLogin
     case office
     case officeAdmin
     case campaignLogin
@@ -121,6 +122,16 @@ final class AppState: ObservableObject {
         return true
     }
 
+    /// Dedicated admin console sign-in (from hub). Uses the same office user profile for demo data.
+    func signInAdmin(email: String, password: String) -> Bool {
+        guard !email.isEmpty, !password.isEmpty else { return false }
+        userEmail = email
+        userName = email.split(separator: "@").first.map(String.init) ?? email
+        userInitials = String(email.prefix(2)).uppercased()
+        activeRoot = .officeAdmin
+        return true
+    }
+
     func signInCampaign(email: String, password: String) -> Bool {
         guard !email.isEmpty, !password.isEmpty else { return false }
         campaignUserEmail = email
@@ -143,6 +154,10 @@ final class AppState: ObservableObject {
 
     func goToOfficeLogin() {
         activeRoot = .officeLogin
+    }
+
+    func goToAdminLogin() {
+        activeRoot = .adminLogin
     }
 
     func goToCampaignLogin() {

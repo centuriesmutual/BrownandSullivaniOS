@@ -19,10 +19,10 @@ struct HubView: View {
                         Text("Google / Apple–style workspace")
                             .font(.subheadline.weight(.medium))
                             .foregroundStyle(Theme.color.textSecondary)
-                        Text("Choose a product")
+                        Text("Choose where to sign in")
                             .font(.largeTitle.bold())
                             .foregroundStyle(Theme.color.textPrimary)
-                        Text("Same sign-in experience as your productivity suite.")
+                        Text("Office for agents, Admin for operators, PressBox for marketing.")
                             .font(.subheadline)
                             .foregroundStyle(Theme.color.textSecondary)
                             .multilineTextAlignment(.center)
@@ -32,7 +32,7 @@ struct HubView: View {
                     VStack(spacing: 14) {
                         workspaceCard(
                             title: "Office",
-                            subtitle: "Phone · cloud files · mail · calendar · chat",
+                            subtitle: "Agents · phone, mail, Drive, calendar, chat",
                             icon: "building.2.fill",
                             gradient: [Theme.color.primary, Color(hex: 0x4285F4)]
                         ) {
@@ -40,8 +40,17 @@ struct HubView: View {
                         }
 
                         workspaceCard(
+                            title: "Admin",
+                            subtitle: "Operators · users, system health, audit activity",
+                            icon: "shield.lefthalf.filled",
+                            gradient: [Color(hex: 0xDC2626), Color(hex: 0x991B1B)]
+                        ) {
+                            app.goToAdminLogin()
+                        }
+
+                        workspaceCard(
                             title: "PressBox",
-                            subtitle: "Marketing Hub — campaigns & intelligence",
+                            subtitle: "Marketing Hub · campaigns, content, intelligence",
                             icon: "megaphone.fill",
                             gradient: [PressBoxTheme.indigo, PressBoxTheme.indigoDark]
                         ) {

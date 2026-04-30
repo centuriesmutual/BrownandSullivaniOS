@@ -14,6 +14,11 @@ struct ContentView: View {
                     LoginView()
                 }
                 .transition(.opacity.combined(with: .move(edge: .trailing)))
+            case .adminLogin:
+                NavigationStack {
+                    AdminLoginView()
+                }
+                .transition(.opacity.combined(with: .move(edge: .trailing)))
             case .office:
                 OfficeRootView()
                     .transition(.opacity)
@@ -47,6 +52,10 @@ private func previewState(_ root: AppRoot) -> AppState {
 
 #Preview("Office login") {
     ContentView().environmentObject(previewState(.officeLogin))
+}
+
+#Preview("Admin login") {
+    ContentView().environmentObject(previewState(.adminLogin))
 }
 
 #Preview("Office") {

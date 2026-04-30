@@ -1,6 +1,7 @@
 import SwiftUI
 
-struct LoginView: View {
+/// Administrator sign-in — separate route from Office agents; opens `AdminView` on success.
+struct AdminLoginView: View {
     @EnvironmentObject private var app: AppState
     @State private var email = ""
     @State private var password = ""
@@ -9,6 +10,12 @@ struct LoginView: View {
 
     @FocusState private var focused: Field?
     private enum Field { case email, password }
+
+    private let adminGradient = LinearGradient(
+        colors: [Color(hex: 0xB91C1C), Color(hex: 0x7F1D1D)],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
 
     var body: some View {
         ZStack {
@@ -32,24 +39,24 @@ struct LoginView: View {
                 } label: {
                     Label("Workspaces", systemImage: "chevron.backward")
                 }
-                .tint(Theme.color.primary)
+                .tint(Theme.color.danger)
             }
         }
     }
 
     private var bubble: some View {
         VStack(spacing: Theme.spacing.l) {
-            // Header
             VStack(spacing: 6) {
-                Image(systemName: "building.2.crop.circle.fill")
+                Image(systemName: "shield.lefthalf.filled")
                     .font(.system(size: 56))
-                    .foregroundStyle(Theme.gradient.primary)
-                Text("Office sign-in")
+                    .foregroundStyle(adminGradient)
+                Text("Admin Console")
                     .font(.system(size: 28, weight: .bold))
-                    .foregroundStyle(Color(hex: 0x1A365D))
-                Text("Sign in to the agent workspace")
+                    .foregroundStyle(Color(hex: 0x450A0A))
+                Text("Sign in for system overview, users, and activity")
                     .font(.subheadline)
-                    .foregroundStyle(Color(hex: 0x4A5568))
+                    .foregroundStyle(Color(hex: 0x57534E))
+                    .multilineTextAlignment(.center)
             }
             .padding(.top, Theme.spacing.l)
 
@@ -65,52 +72,51 @@ struct LoginView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 10))
             }
 
-            // Form
             VStack(alignment: .leading, spacing: Theme.spacing.m) {
-                fieldLabel("Email address")
-                TextField("Enter your email", text: $email)
+                fieldLabel("Admin email")
+                TextField("admin@yourorg.com", text: $email)
                     .textInputAutocapitalization(.never)
                     .keyboardType(.emailAddress)
                     .autocorrectionDisabled()
                     .focused($focused, equals: .email)
                     .submitLabel(.next)
                     .onSubmit { focused = .password }
-                    .modifier(LoginField())
+                    .modifier(AdminLoginField())
 
                 fieldLabel("Password")
                 SecureField("Enter your password", text: $password)
                     .focused($focused, equals: .password)
                     .submitLabel(.go)
                     .onSubmit(submit)
-                    .modifier(LoginField())
+                    .modifier(AdminLoginField())
 
                 Toggle(isOn: $rememberMe) {
                     Text("Remember me").font(.subheadline)
                 }
-                .tint(Color(hex: 0x4299E1))
+                .tint(Theme.color.danger)
                 .padding(.top, 4)
             }
 
             Button(action: submit) {
-                Text("Sign in to Office")
+                Text("Sign in to Admin")
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
             }
             .buttonStyle(.plain)
-            .background(Theme.gradient.primary)
+            .background(adminGradient)
             .foregroundStyle(.white)
             .clipShape(RoundedRectangle(cornerRadius: 10))
-            .shadow(color: Color(hex: 0x4299E1).opacity(0.3), radius: 12, y: 4)
+            .shadow(color: Color(hex: 0xB91C1C).opacity(0.35), radius: 12, y: 4)
         }
         .padding(Theme.spacing.xl)
         .background(Color.white.opacity(0.96))
         .clipShape(RoundedRectangle(cornerRadius: Theme.radius.xl, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Theme.radius.xl, style: .continuous)
-                .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                .stroke(Theme.color.danger.opacity(0.12), lineWidth: 1)
         )
-        .shadow(color: .black.opacity(0.25), radius: 50, x: 0, y: 25)
+        .shadow(color: .black.opacity(0.2), radius: 40, x: 0, y: 20)
         .frame(maxWidth: 460)
     }
 
@@ -121,7 +127,7 @@ struct LoginView: View {
     }
 
     private func submit() {
-        if app.signIn(email: email, password: password) {
+        if app.signInAdmin(email: email, password: password) {
             error = nil
         } else {
             error = "Please enter both email and password"
@@ -129,7 +135,7 @@ struct LoginView: View {
     }
 }
 
-private struct LoginField: ViewModifier {
+private struct AdminLoginField: ViewModifier {
     func body(content: Content) -> some View {
         content
             .font(.body)
@@ -146,6 +152,6 @@ private struct LoginField: ViewModifier {
 
 #Preview {
     NavigationStack {
-        LoginView().environmentObject(AppState())
+        AdminLoginView().environmentObject(AppState())
     }
 }
