@@ -2,11 +2,14 @@ import Foundation
 import SwiftUI
 import Combine
 
-/// Top-level navigation root.
+/// Top-level navigation: workspace hub, each product’s login, and shells.
 enum AppRoot: Equatable {
-    case login
+    case hub
+    case officeLogin
     case office
-    case admin
+    case officeAdmin
+    case campaignLogin
+    case campaign
 }
 
 /// Single source of truth for the app. Mirrors the seeded fixtures from the
@@ -15,8 +18,9 @@ enum AppRoot: Equatable {
 final class AppState: ObservableObject {
 
     // MARK: - Routing
-    @Published var activeRoot: AppRoot = .login
+    @Published var activeRoot: AppRoot = .hub
     @Published var officeTab: OfficeTab = .home
+    @Published var campaignTab: CampaignTab = .dashboard
 
     // MARK: - Session
     @Published var userName: String = "Alex Morgan"
@@ -70,6 +74,21 @@ final class AppState: ObservableObject {
     ]
 
     // MARK: - Office shortcuts (the iOS-style app grid on the home dashboard)
+
+    // MARK: - PressBox / Campaign (Marketing Hub)
+    @Published var campaignUserName: String = "Jordan Lee"
+    @Published var campaignUserEmail: String = "jordan.lee@pressbox.marketing"
+    @Published var campaignEvents: [PressEvent] = AppState.seedPressEvents
+    @Published var marketingTasks: [MarketingTaskItem] = AppState.seedMarketingTasks
+    @Published var campaignInbox: [CampaignInboxPerson] = AppState.seedCampaignInbox
+    @Published var campaignThreads: [Int: [CampaignThreadMessage]] = AppState.seedCampaignThreads
+    @Published var accountSnapshot: CampaignAccountSnapshot = AppState.seedAccountSnapshot
+    @Published var campaignTransactions: [CampaignTransaction] = AppState.seedCampaignTransactions
+    @Published var intelligenceArticles: [IntelligenceArticle] = AppState.seedIntelligenceArticles
+    @Published var performanceDays: [PerformanceDayRow] = AppState.seedPerformanceDays
+    @Published var campaignSummaries: [NamedCampaignSummary] = AppState.seedCampaignSummaries
+    @Published var biWeekEngagement: [BIDayPoint] = AppState.seedBIWeek
+
     @Published var shortcuts: [OfficeAppShortcut] = [
         .init(title: "Phone",     icon: "phone.fill",      gradient: [Color(hex: 0x22C55E), Color(hex: 0x16A34A)], destinationTab: .dialer),
         .init(title: "Mail",      icon: "envelope.fill",   gradient: [Color(hex: 0x3B82F6), Color(hex: 0x2563EB)], destinationTab: .email),
@@ -86,22 +105,88 @@ final class AppState: ObservableObject {
     func signIn(email: String, password: String) -> Bool {
         guard !email.isEmpty, !password.isEmpty else { return false }
         userEmail = email
+        userName = email.split(separator: "@").first.map(String.init) ?? email
         userInitials = String(email.prefix(2)).uppercased()
         activeRoot = .office
         officeTab = .home
         return true
     }
 
+    func signInCampaign(email: String, password: String) -> Bool {
+        guard !email.isEmpty, !password.isEmpty else { return false }
+        campaignUserEmail = email
+        campaignUserName = email.split(separator: "@").first.map { capLocalPart(String($0)) } ?? email
+        activeRoot = .campaign
+        campaignTab = .dashboard
+        return true
+    }
+
     func signOut() {
-        activeRoot = .login
+        activeRoot = .hub
+    }
+
+    func goToHub() {
+        activeRoot = .hub
+    }
+
+    func goToOfficeLogin() {
+        activeRoot = .officeLogin
+    }
+
+    func goToCampaignLogin() {
+        activeRoot = .campaignLogin
     }
 
     func switchToAdmin() {
-        activeRoot = .admin
+        activeRoot = .officeAdmin
     }
 
     func backToOffice() {
         activeRoot = .office
+    }
+
+    // MARK: - Campaign messaging
+
+    func campaignMessages(for conversationId: Int) -> [CampaignThreadMessage] {
+        campaignThreads[conversationId] ?? []
+    }
+
+    func sendCampaignMessage(conversationId: Int, text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        var thread = campaignMessages(for: conversationId)
+        let nextId = (thread.map(\.id).max() ?? 0) + 1
+        let f = DateFormatter()
+        f.dateFormat = "h:mm a"
+        thread.append(CampaignThreadMessage(
+            id: nextId,
+            sender: "You",
+            content: trimmed,
+            timestamp: f.string(from: Date()),
+            isOwn: true
+        ))
+        campaignThreads[conversationId] = thread
+        if let idx = campaignInbox.firstIndex(where: { $0.id == conversationId }) {
+            campaignInbox[idx].lastMessage = trimmed
+            campaignInbox[idx].timestamp = "Just now"
+            campaignInbox[idx].unread = 0
+        }
+    }
+
+    func addCampaignEvent(title: String, time: String, on date: Date, type: PressEventKind) {
+        let nextId = (campaignEvents.map(\.id).max() ?? 0) + 1
+        let row = PressEvent(
+            id: nextId,
+            title: title,
+            time: time,
+            date: CampaignDateFormat.storageString(from: date),
+            type: type
+        )
+        campaignEvents.append(row)
+    }
+
+    private static func capLocalPart(_ s: String) -> String {
+        s.split(separator: ".").map { $0.capitalized }.joined(separator: " ")
     }
 
     // MARK: - Email actions
@@ -324,5 +409,134 @@ extension AppState {
         .init(kind: .systemAlert,    user: nil,        message: "High CPU usage detected",     timestamp: "15 minutes ago"),
         .init(kind: .securityAlert,  user: nil,        message: "Failed login attempts (×4)",  timestamp: "30 minutes ago"),
         .init(kind: .userAction,     user: "Sarah J.", message: "Submitted application",       timestamp: "1 hour ago"),
+    ]
+
+    // MARK: - PressBox (Campaign-main) seeds
+
+    static var seedPressEvents: [PressEvent] {
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: Date())
+        let d0 = CampaignDateFormat.storageString(from: start)
+        let d1 = CampaignDateFormat.storageString(from: cal.date(byAdding: .day, value: 1, to: start)!)
+        let d2 = CampaignDateFormat.storageString(from: cal.date(byAdding: .day, value: 3, to: start)!)
+        return [
+            PressEvent(id: 1, title: "Team Meeting",      time: "2:00 PM",  date: d0, type: .meeting),
+            PressEvent(id: 2, title: "Content Review",    time: "11:00 AM", date: d1, type: .review),
+            PressEvent(id: 3, title: "Campaign Launch",   time: "9:00 AM",  date: d2, type: .event),
+        ]
+    }
+
+    static let seedMarketingTasks: [MarketingTaskItem] = [
+        .init(id: 1, title: "Review Q2 Marketing Plan",
+              description: "Review and provide feedback on the Q2 marketing strategy and budget allocation.",
+              dueDate: "Today", priority: "High", status: "In Progress", assignedBy: "Sarah Johnson"),
+        .init(id: 2, title: "Create Social Media Posts",
+              description: "Design and schedule social media content for the upcoming product launch.",
+              dueDate: "Tomorrow", priority: "Medium", status: "Not Started", assignedBy: "Mike Chen"),
+        .init(id: 3, title: "Update Website Content",
+              description: "Refresh the website content with new product information and customer testimonials.",
+              dueDate: "Next Week", priority: "Low", status: "In Progress", assignedBy: "Lisa Wong"),
+    ]
+
+    static let seedCampaignInbox: [CampaignInboxPerson] = [
+        .init(id: 1, name: "Sarah Johnson",  role: "Content Manager", lastMessage: "Thanks for the feedback on the Q2 campaign!",
+              timestamp: "2 min ago", unread: 0, presence: .online, initials: "SJ"),
+        .init(id: 2, name: "Mike Chen",      role: "Marketing Director", lastMessage: "Can we schedule a meeting for next week?",
+              timestamp: "1 hour ago", unread: 2, presence: .away, initials: "MC"),
+        .init(id: 3, name: "Emily Rodriguez", role: "Design Lead", lastMessage: "The new mockups are ready for review",
+              timestamp: "3 hours ago", unread: 0, presence: .offline, initials: "ER"),
+        .init(id: 4, name: "David Kim",      role: "Analytics Specialist", lastMessage: "The campaign metrics look promising",
+              timestamp: "1 day ago", unread: 1, presence: .online, initials: "DK"),
+    ]
+
+    static let seedCampaignThreads: [Int: [CampaignThreadMessage]] = [
+        1: [
+            .init(id: 1, sender: "Sarah Johnson", content: "Hi! I wanted to follow up on the Q2 campaign strategy we discussed.",
+                  timestamp: "10:30 AM", isOwn: false),
+            .init(id: 2, sender: "You", content: "Thanks for reaching out! I've reviewed the proposal and it looks great.",
+                  timestamp: "10:32 AM", isOwn: true),
+            .init(id: 3, sender: "Sarah Johnson", content: "Perfect! Should we schedule a team meeting to discuss the implementation?",
+                  timestamp: "10:35 AM", isOwn: false),
+            .init(id: 4, sender: "You", content: "Yes, that sounds good. How about next Tuesday at 2 PM?",
+                  timestamp: "10:36 AM", isOwn: true),
+            .init(id: 5, sender: "Sarah Johnson", content: "Thanks for the feedback on the Q2 campaign!",
+                  timestamp: "2 min ago", isOwn: false),
+        ],
+        2: [
+            .init(id: 1, sender: "Mike Chen", content: "Can we schedule a meeting for next week?",
+                  timestamp: "1 hour ago", isOwn: false),
+        ],
+        3: [
+            .init(id: 1, sender: "Emily Rodriguez", content: "The new mockups are ready for review",
+                  timestamp: "3 hours ago", isOwn: false),
+        ],
+        4: [
+            .init(id: 1, sender: "David Kim", content: "The campaign metrics look promising",
+                  timestamp: "1 day ago", isOwn: false),
+        ],
+    ]
+
+    static let seedAccountSnapshot = CampaignAccountSnapshot(
+        currentBalance: 18_400.50,
+        previousBalance: 16_200.75,
+        totalEarnings: 28_400.25,
+        totalSpent: 9_999.75,
+        pendingAmount: 1_250.00
+    )
+
+    static let seedCampaignTransactions: [CampaignTransaction] = [
+        .init(id: 1,  isCredit: true,  amount: 2_500.00,  description: "Campaign Revenue - Q4 Marketing", date: "2024-01-21", status: "completed"),
+        .init(id: 2,  isCredit: false, amount: -450.00,   description: "Ad Spend - Facebook Campaign",   date: "2024-01-20", status: "completed"),
+        .init(id: 3,  isCredit: true,  amount: 1_800.00,  description: "Content Monetization",          date: "2024-01-19", status: "completed"),
+        .init(id: 4,  isCredit: false, amount: -320.00,   description: "Google Ads Budget",             date: "2024-01-18", status: "completed"),
+        .init(id: 5,  isCredit: true,  amount: 1_250.00,  description: "Affiliate Commission",          date: "2024-01-17", status: "pending"),
+        .init(id: 6,  isCredit: false, amount: -150.00,   description: "Software Subscription",         date: "2024-01-16", status: "completed"),
+        .init(id: 7,  isCredit: true,  amount: 3_200.00,  description: "Brand Partnership",           date: "2024-01-15", status: "completed"),
+        .init(id: 8,  isCredit: false, amount: -280.00,   description: "Design Tools License",          date: "2024-01-14", status: "completed"),
+    ]
+
+    static let seedIntelligenceArticles: [IntelligenceArticle] = [
+        .init(id: 1,  title: "Marketing Strategy Guide",      views: 15_420, engagement: 94, publishDate: "2024-01-21", status: "Published", category: "Strategy"),
+        .init(id: 2,  title: "Q4 Campaign Brief",             views: 12_850, engagement: 87, publishDate: "2024-01-20", status: "Updated",   category: "Campaign"),
+        .init(id: 3,  title: "Social Media Best Practices",   views: 9_650,  engagement: 91, publishDate: "2024-01-19", status: "Published", category: "Social Media"),
+        .init(id: 4,  title: "Content Calendar Template",     views: 11_200, engagement: 89, publishDate: "2024-01-18", status: "Draft",     category: "Templates"),
+        .init(id: 5,  title: "Email Marketing Automation",   views: 8_750,  engagement: 88, publishDate: "2024-01-17", status: "Published", category: "Email"),
+        .init(id: 6,  title: "SEO Optimization Tips",         views: 14_200, engagement: 92, publishDate: "2024-01-16", status: "Published", category: "SEO"),
+        .init(id: 7,  title: "Brand Guidelines Update",       views: 6_800,  engagement: 85, publishDate: "2024-01-15", status: "Updated",   category: "Brand"),
+        .init(id: 8,  title: "Analytics Dashboard Setup",     views: 9_200,  engagement: 90, publishDate: "2024-01-14", status: "Published", category: "Analytics"),
+        .init(id: 9,  title: "Video Content Strategy",        views: 10_500, engagement: 87, publishDate: "2024-01-13", status: "Published", category: "Video"),
+        .init(id: 10, title: "Customer Journey Mapping",      views: 7_800,  engagement: 89, publishDate: "2024-01-12", status: "Draft",     category: "Strategy"),
+    ]
+
+    static var seedPerformanceDays: [PerformanceDayRow] {
+        let cal = Calendar.current
+        var rows: [PerformanceDayRow] = []
+        for offset in (0..<14).reversed() {
+            guard let d = cal.date(byAdding: .day, value: -offset, to: Date()) else { continue }
+            let spend = Double((offset * 17 + 31) % 400 + 100)
+            let revenue = Double((offset * 23 + 50) % 900 + 200)
+            let roas = min(300, max(50, (revenue / max(1, spend)) * 100))
+            let f = DateFormatter()
+            f.dateStyle = .short
+            let label = f.string(from: d)
+            rows.append(PerformanceDayRow(id: 14 - offset, label: label, spend: spend, revenue: revenue, roas: roas))
+        }
+        return rows
+    }
+
+    static let seedCampaignSummaries: [NamedCampaignSummary] = [
+        .init(id: 1, name: "Summer Sale", spend: 1_200, revenue: 2_400, roas: 200),
+        .init(id: 2, name: "Product Launch", spend: 800, revenue: 1_400, roas: 175),
+        .init(id: 3, name: "Brand Awareness", spend: 600, revenue: 950, roas: 158),
+    ]
+
+    static let seedBIWeek: [BIDayPoint] = [
+        .init(id: 0, day: "Mon", engagement: 78, views: 1_250),
+        .init(id: 1, day: "Tue", engagement: 95, views: 2_100),
+        .init(id: 2, day: "Wed", engagement: 82, views: 1_750),
+        .init(id: 3, day: "Thu", engagement: 97, views: 2_300),
+        .init(id: 4, day: "Fri", engagement: 85, views: 1_950),
+        .init(id: 5, day: "Sat", engagement: 72, views: 1_400),
+        .init(id: 6, day: "Sun", engagement: 68, views: 1_200),
     ]
 }

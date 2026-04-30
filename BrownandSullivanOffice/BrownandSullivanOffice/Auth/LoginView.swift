@@ -27,6 +27,17 @@ struct LoginView: View {
                 .padding(.horizontal, Theme.spacing.l)
             }
         }
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    app.goToHub()
+                } label: {
+                    Label("Workspaces", systemImage: "chevron.backward")
+                }
+                .tint(Theme.color.primary)
+            }
+        }
     }
 
     private var bubble: some View {
@@ -137,5 +148,7 @@ private struct LoginField: ViewModifier {
 }
 
 #Preview {
-    LoginView().environmentObject(AppState())
+    NavigationStack {
+        LoginView().environmentObject(AppState())
+    }
 }

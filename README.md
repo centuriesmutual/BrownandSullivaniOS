@@ -1,11 +1,18 @@
 # Brown and Sullivan Office (iOS)
 
-Native SwiftUI iOS port of the [Office Dashboard](https://github.com/) Next.js web app. Mirrors every screen from the source: Login, Office (Home, Dialer, Email, Calendar, Drive, Chat, Analytics, Settings) and Admin.
+Native SwiftUI iOS port of two Next.js products in one app:
+
+1. **Office Dashboard** — login, tabbed office (Home, Dialer, Email, Calendar, Drive, Chat, Analytics, Settings) and Admin.
+2. **PressBox (Campaign)** — Marketing Hub from `Campaign-main`: workspace hub entry, indigo sign-in, dashboard (tasks + month calendar + events from bundled fixtures), messaging, content submissions, intelligence (article analytics), account balance, create ad, performance charts, chat/meetings profile, and advanced BI. Matches the web app’s primary routes in native Swift (no WebView).
 
 - **Platform:** iOS 17.0+ (iPhone & iPad)
 - **Language:** Swift 5.9 / SwiftUI
-- **Architecture:** Single `AppState` `ObservableObject` store + per-screen `@StateObject` view models where useful
+- **Architecture:** Single `AppState` `ObservableObject` for both products + `AppRoot` hub routing
 - **Dependencies:** None (stdlib + SwiftUI only)
+
+## First launch
+
+The app opens the **workspace hub**: choose **Office Dashboard** or **PressBox**, then sign in (any non-empty email + password, same as the original web demos). **Sign out** returns to the hub.
 
 ## Project structure
 
@@ -14,12 +21,14 @@ BrownandSullivanOffice/
 ├── project.yml                      # XcodeGen spec (source of truth for the .xcodeproj)
 └── BrownandSullivanOffice/
     ├── BrownandSullivanOfficeApp.swift   App entry
-    ├── ContentView.swift                  Root: Login vs Office vs Admin
+    ├── ContentView.swift                  Root: hub → Office or PressBox logins + shells
     ├── Info.plist
+    ├── Auth/HubView.swift                 Pick Office vs PressBox
+    ├── Auth/LoginView.swift               Office login
+    ├── Campaign/                          PressBox (Marketing Hub) — full native port
     ├── Theme/Theme.swift                  Colors, gradients, spacing tokens
     ├── Models/Models.swift                Email, Meeting, Note, ChatContact, etc.
     ├── Models/AppState.swift              Global ObservableObject
-    ├── Auth/LoginView.swift               Login screen
     ├── Office/OfficeRootView.swift        Tab container
     ├── Office/HomeView.swift              Dashboard
     ├── Office/DialerView.swift            Phone keypad + enrollment

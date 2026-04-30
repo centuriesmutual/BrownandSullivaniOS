@@ -6,14 +6,27 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             switch app.activeRoot {
-            case .login:
-                LoginView()
-                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+            case .hub:
+                HubView()
+                    .transition(.opacity)
+            case .officeLogin:
+                NavigationStack {
+                    LoginView()
+                }
+                .transition(.opacity.combined(with: .move(edge: .trailing)))
             case .office:
                 OfficeRootView()
                     .transition(.opacity)
-            case .admin:
+            case .officeAdmin:
                 AdminView()
+                    .transition(.opacity)
+            case .campaignLogin:
+                NavigationStack {
+                    CampaignLoginView()
+                }
+                .transition(.opacity.combined(with: .move(edge: .trailing)))
+            case .campaign:
+                CampaignRootView()
                     .transition(.opacity)
             }
         }
@@ -28,8 +41,12 @@ private func previewState(_ root: AppRoot) -> AppState {
     return s
 }
 
-#Preview("Login") {
-    ContentView().environmentObject(previewState(.login))
+#Preview("Hub") {
+    ContentView().environmentObject(previewState(.hub))
+}
+
+#Preview("Office login") {
+    ContentView().environmentObject(previewState(.officeLogin))
 }
 
 #Preview("Office") {
@@ -37,5 +54,9 @@ private func previewState(_ root: AppRoot) -> AppState {
 }
 
 #Preview("Admin") {
-    ContentView().environmentObject(previewState(.admin))
+    ContentView().environmentObject(previewState(.officeAdmin))
+}
+
+#Preview("Campaign") {
+    ContentView().environmentObject(previewState(.campaign))
 }
