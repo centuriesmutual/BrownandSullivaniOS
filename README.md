@@ -1,53 +1,72 @@
-# Brown and Sullivan Office (iOS)
+# Brown and Sullivan — iOS workspace
 
-Native SwiftUI iOS port of two Next.js products in one app:
-
-1. **Office Dashboard** — login, tabbed office (Home, Dialer, Email, Calendar, Drive, Chat, Analytics, Settings) and Admin.
-2. **PressBox (Campaign)** — Marketing Hub from `Campaign-main`: workspace hub entry, indigo sign-in, dashboard (tasks + month calendar + events from bundled fixtures), messaging, content submissions, intelligence (article analytics), account balance, create ad, performance charts, chat/meetings profile, and advanced BI. Matches the web app’s primary routes in native Swift (no WebView).
+Native **SwiftUI** iOS app combining **Office** (agent workspace), **Admin** (operations console), and **PressBox** (Campaign / marketing hub). Ported from the original Next.js products; primary flows are native (no WebView).
 
 - **Platform:** iOS 17.0+ (iPhone & iPad)
 - **Language:** Swift 5.9 / SwiftUI
-- **Architecture:** Single `AppState` `ObservableObject` for both products + `AppRoot` hub routing
+- **Architecture:** Single `AppState` `ObservableObject` + `AppRoot` routing from a shared workspace hub
 - **Dependencies:** None (stdlib + SwiftUI only)
 
 ## First launch
 
-The app opens the **workspace hub**: choose **Office Dashboard** or **PressBox**, then sign in (any non-empty email + password, same as the original web demos). **Sign out** returns to the hub.
+The app opens the **workspace hub**. Pick one of three sign-in paths:
+
+| Entry        | Login screen            | After sign-in        |
+| ------------ | ----------------------- | -------------------- |
+| **Office**   | `Auth/LoginView`        | Tabbed office shell  |
+| **Admin**    | `Auth/AdminLoginView`   | Admin console        |
+| **PressBox** | `Campaign/CampaignLoginView` | Marketing Hub tabs |
+
+Use any **non-empty email and password** (demo behavior, same idea as the web apps). **Sign out** returns to the hub.
+
+**From Office:** the profile menu still includes **Switch to Admin**, which opens the admin console without a second login (same session).
+
+## Products
+
+### Office
+
+Tabs: **Home** (app grid, meetings, calls, email preview, AI assistant, activity), **Dialer** (VoIP-style line + keypad + recents + enrollment sheet), **Email**, **Calendar**, **Drive** (cloud-style shelves, sync strip, list/grid), **Chat**, **Analytics**, **Settings**, **Documents**, **Enrollment** (wizard).
+
+UI leans **Google / Apple workspace** chrome: neutral grouped background, suite search on Home, RingCentral-inspired phone surfaces, Dropbox-style Drive cues (`Theme.Suite`, `SuiteControls`).
+
+### Admin
+
+System overview, users, system health, activity — `Admin/AdminView.swift`. Reach it from the **Admin** card on the hub or **Switch to Admin** from Office.
+
+### PressBox (Campaign)
+
+Tabs: **Dashboard** (tasks, calendar, events), **Messaging**, **Submissions**, **Intelligence** (article analytics). Overflow screens (toolbar / menu): **Account balance**, **Create ad**, **Performance**, **Chat & meetings**, **Advanced BI**.
+
+**Popular workspace:** if the campaign email matches certain patterns (e.g. `editor.*`, `lead.*`, `+popular` in the address, `@partners.pressbox.marketing`, etc.), the user gets trending highlights, lands on **Intelligence** first, and sees Popular chrome. See `AppState.campaignTier(forEmail:)` and the login footnote on `CampaignLoginView`.
 
 ## Project structure
 
 ```
 BrownandSullivanOffice/
-├── project.yml                      # XcodeGen spec (source of truth for the .xcodeproj)
+├── project.yml                      # XcodeGen spec
 └── BrownandSullivanOffice/
     ├── BrownandSullivanOfficeApp.swift   App entry
-    ├── ContentView.swift                  Root: hub → Office or PressBox logins + shells
+    ├── ContentView.swift                  Hub → login routes → shells
     ├── Info.plist
-    ├── Auth/HubView.swift                 Pick Office vs PressBox
-    ├── Auth/LoginView.swift               Office login
-    ├── Campaign/                          PressBox (Marketing Hub) — full native port
-    ├── Theme/Theme.swift                  Colors, gradients, spacing tokens
-    ├── Models/Models.swift                Email, Meeting, Note, ChatContact, etc.
-    ├── Models/AppState.swift              Global ObservableObject
-    ├── Office/OfficeRootView.swift        Tab container
-    ├── Office/HomeView.swift              Dashboard
-    ├── Office/DialerView.swift            Phone keypad + enrollment
-    ├── Office/EmailView.swift             Mailbox
-    ├── Office/CalendarView.swift          Month + events
-    ├── Office/DriveView.swift             Files browser
-    ├── Office/ChatView.swift              Contacts + conversation
-    ├── Office/AnalyticsView.swift         Stats + sales table
-    ├── Office/SettingsView.swift          Profile, notifications
-    ├── Admin/AdminView.swift              System status, metrics, users, activity
-    ├── Components/                        DashboardCard, IOSAppIcon, StatCard, …
-    └── Resources/Assets.xcassets          AppIcon, AccentColor
+    ├── Auth/
+    │   ├── HubView.swift                  Office | Admin | PressBox
+    │   ├── LoginView.swift                Office sign-in
+    │   └── AdminLoginView.swift           Admin sign-in
+    ├── Campaign/                          PressBox (Marketing Hub)
+    ├── Theme/Theme.swift                  Design tokens + suite chrome modifiers
+    ├── Models/Models.swift                Domain models + `OfficeTab`, etc.
+    ├── Models/AppState.swift              Global state, seeds, auth helpers
+    ├── Office/                            Tab views, Documents, Enrollment
+    ├── Admin/AdminView.swift
+    ├── Components/                        DashboardCard, SuiteControls, …
+    └── Resources/Assets.xcassets
 ```
 
-## Build instructions (macOS)
+## Build (macOS)
 
-You need a Mac with **Xcode 15+** to build and run. (You can edit on Windows; you cannot compile.)
+Use a Mac with **Xcode 15+**.
 
-### 1. Generate the Xcode project with XcodeGen
+### With XcodeGen
 
 ```bash
 brew install xcodegen
@@ -56,34 +75,33 @@ xcodegen generate
 open BrownandSullivanOffice.xcodeproj
 ```
 
-### 2. Or open without XcodeGen
+### Without XcodeGen
 
-If you prefer not to install XcodeGen, on the Mac:
+Create a new iOS App in Xcode (SwiftUI, iOS 17), then add the `BrownandSullivanOffice/BrownandSullivanOffice/` sources to the target as described in earlier repo docs, or drag the folder in as a group.
 
-1. Open Xcode → **File → New → Project → iOS App**
-2. Name it `BrownandSullivanOffice`, organisation identifier `com.brownandsullivan`, interface **SwiftUI**, language **Swift**, deployment target iOS **17.0**
-3. Delete the generated `ContentView.swift` and `BrownandSullivanOfficeApp.swift`
-4. Drag the entire `BrownandSullivanOffice/BrownandSullivanOffice/` folder from this repo into the Xcode project navigator (choose "Create groups", target = the new app)
-5. Build & run on a simulator or device.
+## Routing reference
 
-## Login
+`AppState.activeRoot` (`AppRoot`):
 
-Like the web version: any non-empty email + password lets you in. Tap the avatar in the top-right of the Office tab and choose **Switch to Admin** to see the admin dashboard, or **Sign Out** to return to login.
+- `hub` — workspace picker  
+- `officeLogin` / `office` — Office login → `OfficeRootView`  
+- `adminLogin` / `officeAdmin` — Admin login → `AdminView`  
+- `campaignLogin` / `campaign` — Campaign login → `CampaignRootView`  
 
-## Mapping from web to iOS
+## Web → iOS mapping (sample)
 
-| Web (Next.js)                          | iOS (SwiftUI)                          |
-| -------------------------------------- | -------------------------------------- |
-| `app/page.js` (login)                  | `Auth/LoginView.swift`                 |
-| `app/office/page.js` tabs              | `Office/OfficeRootView.swift` + tab views |
-| `app/office/email/page.js`             | `Office/EmailView.swift`               |
-| `app/admin/page.js`                    | `Admin/AdminView.swift`                |
-| Bootstrap `Card`                       | `DashboardCard` component              |
-| `react-icons/fa`                       | SF Symbols                             |
-| `useRouter`                            | `AppState.activeRoot` enum             |
+| Web (Next.js)              | iOS (SwiftUI)                    |
+| -------------------------- | -------------------------------- |
+| Landing / product pick     | `Auth/HubView.swift`             |
+| Office login               | `Auth/LoginView.swift`           |
+| Admin login (dedicated)    | `Auth/AdminLoginView.swift`      |
+| Campaign login             | `Campaign/CampaignLoginView.swift` |
+| Office tabs                | `Office/OfficeRootView.swift` + tab views |
+| Admin                      | `Admin/AdminView.swift`          |
+| Campaign dashboard & routes| `Campaign/*.swift`               |
 
 ## Notes
 
-- All data is **mocked in-memory** — same as the web app's seeded fixtures (emails, meetings, notes, etc.). There is no backend wired up; that's left as an exercise (see `AppState` for natural injection points).
-- Designed for iPhone primarily; iPad uses the same layout with broader columns.
-- Dark mode supported (driven by system).
+- Data is **in-memory / seeded** in `AppState` — no backend. Good starting points for API wiring are the same `AppState` publishers and `func` actions.
+- **Dark mode** follows the system where standard SwiftUI components are used.
+- You can develop the repo on Windows; **building** requires Xcode on a Mac.
